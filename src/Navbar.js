@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaBars, FaSignInAlt, FaUserPlus, FaTimes } from 'react-icons/fa';
+import { FaBars, FaSignInAlt, FaUserPlus, FaTimes, FaSearch } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 
@@ -8,30 +8,30 @@ const Navbar = ({ isLoggedIn, onLogout }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
-  // Check if user details are in cookies on component mount (page refresh)
+  // Fetch user details from cookies
   useEffect(() => {
     const user = Cookies.get('userDetails');
     if (user) {
       setUserDetails(JSON.parse(user));
     }
-  }, []); // Empty dependency array ensures this runs only once when the component mounts
+  }, []);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   const handleLogout = () => {
     onLogout();
-    setSidebarOpen(false);
-    Cookies.remove('userDetails'); // Remove user details from cookies
-    setUserDetails(null); // Reset user details in state
+    Cookies.remove('userDetails');
+    setUserDetails(null);
     navigate('/login');
   };
 
-  const toggleDropdown = () => {
-    setDropdownOpen(!dropdownOpen);
+  const handleSearch = (e) => {
+    e.preventDefault();
+    navigate(`/search?q=${searchQuery}`);
+    setSearchQuery('');
   };
 
   return (
@@ -42,7 +42,7 @@ const Navbar = ({ isLoggedIn, onLogout }) => {
       className="fixed w-full bg-white shadow-lg z-50"
     >
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        {/* Mobile Hamburger Button */}
+        {/* Mobile Hamburger */}
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -53,52 +53,61 @@ const Navbar = ({ isLoggedIn, onLogout }) => {
         </motion.button>
 
         {/* Logo */}
-        <motion.h1
-          initial={{ x: 0 }}
-          animate={{ x: 0 }}
-          transition={{ type: 'spring', stiffness: 120 }}
-          className="text-2xl font-bold text-gray-600 flex-grow text-center"
-        >
+        <h1 className="text-2xl font-bold text-gray-600">
           <Link to="/">TravelNEPAL</Link>
-        </motion.h1>
+        </h1>
 
-        {/* Desktop Links */}
-        <div className="hidden md:flex space-x-6 items-center">
+        {/* Desktop Menu */}
+        <div className="hidden md:flex space-x-8 items-center">
+          <form
+            onSubmit={handleSearch}
+            className="relative flex items-center border-2 border-gray-300 rounded-full px-4 py-2 shadow-inner"
+          >
+            <FaSearch className="text-gray-500 mr-2" />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent outline-none text-gray-600 w-full"
+            />
+          </form>
+          <Link to="/post" className="text-gray-600 hover:text-orange-500 transition duration-300">
+            Posts
+          </Link>
           {userDetails ? (
-            <>
-              <div className="relative">
-                <img
-                  src={userDetails?.profileImage?.url || '/default-profile.png'}
-                  alt="Profile"
-                  className="h-10 w-10 rounded-full cursor-pointer border border-gray-300"
-                  onClick={toggleDropdown}
-                />
-                {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-lg w-40">
-                    <ul className="py-2 text-gray-600">
-                      <li
-                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                        onClick={() => navigate('/profile')}
-                      >
-                        Profile
-                      </li>
-                      <li
-                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                        onClick={handleLogout}
-                      >
-                        Logout
-                      </li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </>
+            <div className="relative">
+              <img
+                src={userDetails.user.profileImage}
+                alt={userDetails.user.name || 'Profile'}
+                className="w-10 h-10 rounded-full cursor-pointer"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+              />
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-lg w-40">
+                  <ul className="py-2 text-gray-600">
+                    <li
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => navigate('/profile')}
+                    >
+                      Profile
+                    </li>
+                    <li
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={handleLogout}
+                    >
+                      Logout
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
           ) : (
             <>
-              <Link to="/login" className="text-gray-600 hover:text-orange-500 transition duration-300">
+              <Link to="/login" className="text-gray-600 hover:text-orange-500 transition">
                 Login
               </Link>
-              <Link to="/signup" className="text-gray-600 hover:text-orange-500 transition duration-300">
+              <Link to="/signup" className="text-gray-600 hover:text-orange-500 transition">
                 Sign Up
               </Link>
             </>
@@ -106,7 +115,7 @@ const Navbar = ({ isLoggedIn, onLogout }) => {
         </div>
       </div>
 
-      {/* Sidebar for Mobile */}
+      {/* Sidebar */}
       <motion.div
         initial={{ x: '-100%' }}
         animate={{ x: sidebarOpen ? 0 : '-100%' }}
@@ -122,33 +131,32 @@ const Navbar = ({ isLoggedIn, onLogout }) => {
           </button>
         </div>
         <ul className="space-y-4">
+          <li>
+            <Link to="/posts" onClick={toggleSidebar}>
+              Posts
+            </Link>
+          </li>
           {userDetails ? (
             <>
               <li>
-                <Link to="/profile" className="flex items-center space-x-3" onClick={toggleSidebar}>
+                <Link to="/profile" onClick={toggleSidebar}>
                   Profile
                 </Link>
               </li>
               <li>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center space-x-2"
-                  onClick={toggleSidebar}
-                >
-                  Logout
-                </button>
+                <button onClick={handleLogout}>Logout</button>
               </li>
             </>
           ) : (
             <>
               <li>
-                <Link to="/login" className="flex items-center space-x-2" onClick={toggleSidebar}>
-                  <FaSignInAlt /> <span>Login</span>
+                <Link to="/login" onClick={toggleSidebar}>
+                  <FaSignInAlt /> Login
                 </Link>
               </li>
               <li>
-                <Link to="/signup" className="flex items-center space-x-2" onClick={toggleSidebar}>
-                  <FaUserPlus /> <span>Sign Up</span>
+                <Link to="/signup" onClick={toggleSidebar}>
+                  <FaUserPlus /> Sign Up
                 </Link>
               </li>
             </>
@@ -156,7 +164,7 @@ const Navbar = ({ isLoggedIn, onLogout }) => {
         </ul>
       </motion.div>
 
-      {/* Overlay for Sidebar */}
+      {/* Overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-10 bg-black bg-opacity-50"

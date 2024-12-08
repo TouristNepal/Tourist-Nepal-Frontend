@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import Cookies from 'js-cookie';
-import jwtDecode from 'jwt-decode'; // Use the named import for jwt-decode
+import React, { useEffect, useState } from "react";
+import Cookies from "js-cookie";
+import jwtDecode from "jwt-decode";
 
 const Profile = () => {
   const [userDetails, setUserDetails] = useState(null);
@@ -8,21 +8,19 @@ const Profile = () => {
 
   useEffect(() => {
     // Retrieve user details from cookies
-    const userData = Cookies.get('userDetails');
+    const userData = Cookies.get("userDetails");
     if (userData) {
-      const parsedData = JSON.parse(userData);
-      setUserDetails(parsedData);
+      try {
+        const parsedData = JSON.parse(userData);
+        setUserDetails(parsedData);
 
-      // Decode the JWT token to check if the user is an admin
-      if (parsedData.token) {
-        try {
-          const decodedToken = jwtDecode(parsedData.token); // Decode the JWT token
-
-          // Access the 'isAdmin' field from the decoded token
-          setIsAdmin(decodedToken.isAdmin); // Set isAdmin based on the decoded token's payload
-        } catch (error) {
-          console.error('Error decoding token:', error);
+        // Decode the JWT token and extract admin status
+        if (parsedData.token) {
+          const decodedToken = jwtDecode(parsedData.token);
+          setIsAdmin(decodedToken.isAdmin || false); // Handle cases where isAdmin might not exist
         }
+      } catch (error) {
+        console.error("Error parsing user data or decoding token:", error);
       }
     }
   }, []);
@@ -40,21 +38,21 @@ const Profile = () => {
       <div className="flex flex-col items-center mb-6">
         {/* Profile Image */}
         <img
-          src={userDetails.profileImage?.url}
-          alt={userDetails.profileImage?.altText || 'Profile image'}
+          src={userDetails.user.profileImage}
+          alt={userDetails.user.name || "Profile Image"}
           className="w-32 h-32 rounded-full shadow-xl mb-6 transition-transform transform hover:scale-110"
         />
         {/* User's Name */}
-        <h2 className="text-3xl font-semibold text-gray-800 mb-2">{userDetails.name}</h2>
+        <h2 className="text-3xl font-semibold text-gray-800 mb-2">{userDetails.user.name}</h2>
         {/* User's Email */}
-        <p className="text-gray-600 text-sm">{userDetails.email}</p>
+        <p className="text-gray-600 text-sm">{userDetails.user.email}</p>
       </div>
 
       {/* User Role */}
       <div className="mt-8 space-y-4">
         <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg shadow-lg hover:shadow-xl transition-all">
           <span className="text-gray-500 font-medium">Role:</span>
-          <span className="text-gray-800">{isAdmin ? 'Admin' : 'User'}</span>
+          <span className="text-gray-800">{isAdmin ? "Admin" : "User"}</span>
         </div>
       </div>
 
