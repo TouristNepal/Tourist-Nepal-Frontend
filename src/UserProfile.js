@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
-import jwtDecode from "jwt-decode";
 
 const Profile = () => {
   const [userDetails, setUserDetails] = useState(null);
@@ -14,10 +13,15 @@ const Profile = () => {
         const parsedData = JSON.parse(userData);
         setUserDetails(parsedData);
 
-        // Decode the JWT token and extract admin status
+        // Decode JWT token manually
         if (parsedData.token) {
-          const decodedToken = jwtDecode(parsedData.token);
-          setIsAdmin(decodedToken.isAdmin || false); // Handle cases where isAdmin might not exist
+          const tokenParts = parsedData.token.split(".");
+          if (tokenParts.length === 3) {
+            const payload = JSON.parse(atob(tokenParts[1]));
+            setIsAdmin(payload.isAdmin || false); // Extract isAdmin status
+          } else {
+            console.error("Invalid JWT token structure");
+          }
         }
       } catch (error) {
         console.error("Error parsing user data or decoding token:", error);

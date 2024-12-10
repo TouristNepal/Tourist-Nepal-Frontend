@@ -1,174 +1,164 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState } from 'react';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 
-const categories = [
-  "Hotels",
-  "Restaurants",
-  "Destinations",
-  "Attractions",
-  "Services",
-];
-
-const defaultPost = {
-  title: "Explore the Ancient City of Bhaktapur",
-  category: "Restaurants",
-  content:
-    "Bhaktapur, also known as Bhadgaon, is one of the most beautiful cultural cities in Nepal. It is famous for its art, architecture, and historic monuments.",
-  imageURL: "https://example.com/images/bhaktapur.jpg",
-  description:
-    "A detailed guide to exploring Bhaktapur, including its temples, festivals, and traditional lifestyle.",
-};
-
-const CreateTouristGuidePost = () => {
-  const [formData, setFormData] = useState(defaultPost);
-  const [message, setMessage] = useState("");
+const CreatePost = () => {
+  // State for form fields
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('');
+  const [content, setContent] = useState('');
+  const [description, setDescription] = useState('');
+  const [imageURL, setImageURL] = useState('');
   const [loading, setLoading] = useState(false);
-  const [userDetails, setUserDetails] = useState(null);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    // Simulate fetching user details from cookies or storage
-    const userCookie = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("userDetails="))
-      ?.split("=")[1];
-    if (userCookie) {
-      const parsedUserDetails = JSON.parse(decodeURIComponent(userCookie));
-      setUserDetails(parsedUserDetails);
-    } else {
-      setMessage("Please log in to create a post.");
+  // Function to get token from cookies
+  const getTokenFromCookies = () => {
+    const userDetails = Cookies.get('userDetails.token'); // 'userDetails' is the cookie key where user data is stored
+    if (userDetails) {
+      const parsedDetails = JSON.parse(userDetails); // Parse the userDetails string into an object
+      return parsedDetails?.token; // Return the token if available
     }
-  }, []);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    return null; // Return null if token is not found
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setMessage("");
 
-    if (!userDetails) {
-      setMessage("User details not found. Please log in.");
-      setLoading(false);
+    // Validation for required fields
+    if (!title || !category || !content || !description) {
+      setError('Please fill in all required fields.');
       return;
     }
 
+    // Get the token from cookies
+    const token = getTokenFromCookies();
+    if (!token) {
+      setError('Authentication token is missing. Please log in again.');
+      return;
+    }
+
+    // Prepare data for the request
+    const postData = {
+      title,
+      category,
+      content,
+      description,
+      imageURL,
+    };
+
+    // Set up request headers with token
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    };
+
+    // Set loading state to true while the request is being made
+    setLoading(true);
+    setError(''); // Reset error
+
     try {
-      const { name, email, profileImage, token } = userDetails;
+      // Send POST request to create a new tourist guide post
+      const response = await axios.post('https://tourist-guide-app.onrender.com/api/blog', postData, config);
+      
+      // Handle successful response
+      console.log('Post created successfully:', response.data);
+      alert('Tourist guide post created successfully!');
 
-      const postPayload = {
-        ...formData,
-        createdBy: {
-          name,
-          email,
-          profileImage: profileImage.url,
-        },
-      };
-
-      const response = await axios.post(
-        "http://localhost:8080/api/blog",
-        postPayload,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      setMessage("Post created successfully!");
-      setFormData(defaultPost); // Reset the form to default values
-    } catch (error) {
-      setMessage(error.response?.data?.message || "Error creating post.");
+      // Reset form after success
+      setTitle('');
+      setCategory('');
+      setContent('');
+      setDescription('');
+      setImageURL('');
+    } catch (err) {
+      // Handle error response
+      console.error('Error creating post:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'Something went wrong. Please try again.');
     } finally {
-      setLoading(false);
+      setLoading(false); // Set loading to false once the request is done
     }
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-xl font-bold mb-4">Create a Tourist Guide Post</h2>
-      {message && (
-        <p
-          className={`mb-4 ${
-            message.includes("success") ? "text-green-600" : "text-red-600"
-          }`}
-        >
-          {message}
-        </p>
-      )}
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Create Tourist Guide Post</h1>
+      
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+      
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Title */}
-        <input
-          type="text"
-          name="title"
-          value={formData.title}
-          onChange={handleChange}
-          placeholder="Enter the title"
-          className="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-          required
-        />
+        <div>
+          <label htmlFor="title" className="block">Title</label>
+          <input
+            id="title"
+            type="text"
+            className="w-full p-2 border border-gray-300 rounded"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+        </div>
+        
+        <div>
+          <label htmlFor="category" className="block">Category</label>
+          <input
+            id="category"
+            type="text"
+            className="w-full p-2 border border-gray-300 rounded"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            required
+          />
+        </div>
+        
+        <div>
+          <label htmlFor="content" className="block">Content</label>
+          <textarea
+            id="content"
+            className="w-full p-2 border border-gray-300 rounded"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            required
+          />
+        </div>
 
-        {/* Category */}
-        <select
-          name="category"
-          value={formData.category}
-          onChange={handleChange}
-          className="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-          required
-        >
-          <option value="" disabled>
-            Select a category
-          </option>
-          {categories.map((category, index) => (
-            <option key={index} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
+        <div>
+          <label htmlFor="description" className="block">Description</label>
+          <textarea
+            id="description"
+            className="w-full p-2 border border-gray-300 rounded"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+          />
+        </div>
 
-        {/* Content */}
-        <textarea
-          name="content"
-          value={formData.content}
-          onChange={handleChange}
-          placeholder="Detailed content about the post"
-          rows="5"
-          className="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-          required
-        ></textarea>
+        <div>
+          <label htmlFor="imageURL" className="block">Image URL (Optional)</label>
+          <input
+            id="imageURL"
+            type="url"
+            className="w-full p-2 border border-gray-300 rounded"
+            value={imageURL}
+            onChange={(e) => setImageURL(e.target.value)}
+          />
+        </div>
 
-        {/* Image URL */}
-        <input
-          type="url"
-          name="imageURL"
-          value={formData.imageURL}
-          onChange={handleChange}
-          placeholder="Image URL (optional)"
-          className="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
-
-        {/* Description */}
-        <textarea
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          placeholder="Short description"
-          rows="3"
-          className="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-          required
-        ></textarea>
-
-        {/* Submit Button */}
-        <button
-          type="submit"
-          className="w-full py-3 bg-blue-500 text-white rounded hover:bg-blue-600"
-          disabled={loading}
-        >
-          {loading ? "Creating..." : "Create Post"}
-        </button>
+        <div className="flex justify-between items-center">
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            disabled={loading}
+          >
+            {loading ? 'Creating Post...' : 'Create Post'}
+          </button>
+        </div>
       </form>
     </div>
   );
 };
 
-export default CreateTouristGuidePost;
+export default CreatePost;

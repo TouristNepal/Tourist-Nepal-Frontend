@@ -10,6 +10,7 @@ import Footer from './Footer';
 import Profile from './UserProfile'; // Import the Profile component
 import CreatePost from './CreatePost';
 import PostList from './PostList';
+import PostDetail from './PostDetail';
 
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -41,8 +42,9 @@ const App = () => {
             <Route path="/signup" element={<SignUp />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/profile" element={<Profile />} /> {/* Add profile route */}
-            <Route path="/post" element={<CreatePost/>} />
-            <Route path="/posts" element={<PostList/>} />
+            <Route path="/posts" element={<CreatePost/>} />
+            <Route path="/post" element={<PostList/>} />
+            <Route path="/post/:id" element={<PostDetail />} />
           </Routes>
         </main>
         <Footer />
